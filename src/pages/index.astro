@@ -41,7 +41,8 @@ const players = playersData.map((p, index) => {
     ...p,
     totalPoints: totalPts,
     title: titleInfo.name,
-    titleColor: titleInfo.color
+    titleColor: titleInfo.color,
+    modesList: Object.keys(p.tiers).map(m => m.replace(/\s+/g, '')).join(',')
   };
 });
 ---
@@ -135,7 +136,7 @@ const players = playersData.map((p, index) => {
 						</thead>
 						<tbody>
 							{players.map((player) => (
-								<tr class="bg-slate-950/70 hover:bg-purple-950/30 transition-all rounded-xl border border-slate-800/60">
+								<tr class="player-row bg-slate-950/70 hover:bg-purple-950/30 transition-all rounded-xl border border-slate-800/60" data-modes={player.modesList}>
 									<td class="py-4 px-3 text-left font-black text-slate-300 rounded-l-xl">
 										#{player.rank}
 									</td>
@@ -229,6 +230,7 @@ const players = playersData.map((p, index) => {
 			// Filter gamemode columns
 			const modeBtns = document.querySelectorAll('.mode-select-btn');
 			const allModeCols = document.querySelectorAll('.mode-col');
+			const allPlayerRows = document.querySelectorAll('.player-row');
 
 			function selectGamemode(selectedMode) {
 				dropdown?.classList.add('hidden');
@@ -237,16 +239,28 @@ const players = playersData.map((p, index) => {
 					if (titleEl) titleEl.textContent = 'GLOBAL RANKINGS';
 					if (subtitleEl) subtitleEl.textContent = 'Overall Leaderboard Across All Modes';
 					allModeCols.forEach(col => col.classList.remove('hidden'));
+					allPlayerRows.forEach(row => row.classList.remove('hidden'));
 				} else {
 					if (titleEl) titleEl.textContent = `${selectedMode} RANKINGS`;
 					if (subtitleEl) subtitleEl.textContent = `Displaying scores for ${selectedMode} only`;
 					
-					const targetClass = `mode-col-${selectedMode.replace(/\s+/g, '')}`;
+					const targetKey = selectedMode.replace(/\s+/g, '');
+					const targetClass = `mode-col-${targetKey}`;
+
 					allModeCols.forEach(col => {
 						if (col.classList.contains(targetClass)) {
 							col.classList.remove('hidden');
 						} else {
 							col.classList.add('hidden');
+						}
+					});
+
+					allPlayerRows.forEach(row => {
+						const modes = (row.getAttribute('data-modes') || '').split(',');
+						if (modes.includes(targetKey)) {
+							row.classList.remove('hidden');
+						} else {
+							row.classList.add('hidden');
 						}
 					});
 				}
