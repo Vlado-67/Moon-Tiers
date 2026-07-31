@@ -1,10 +1,17 @@
+import { createClient } from 'redis';
+
 export const prerender = false;
 
+async function getRedisClient() {
+  const client = createClient({ url: import.meta.env.REDIS_URL });
+  await client.connect();
+  return client;
+}
+
 export async function POST({ request }) {
+  let client;
   try {
     const secret = request.headers.get('x-bot-secret');
-    console.log('Received secret:', JSON.stringify(secret));
-    console.log('Expected secret:', JSON.stringify(import.meta.env.BOT_SECRET));
 
     if (secret !== import.meta.env.BOT_SECRET) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -15,6 +22,29 @@ export async function POST({ request }) {
 
     const body = await request.json();
     const { ign, tier, gamemode, userId, guildId } = body;
+
+    const tierPoints = {
+      HT1: 60, LT1: 45, HT2: 30, LT2: 20,
+      HT3: 10, LT3: 6,  HT4: 4,  LT4: 3,
+      HT5: 2,  LT5: 1
+    };
+
+    client = await getRedisClient();
+
+    const existingRaw = await client.hGet('players', ign);
+    const existing = existingRaw ? JSON.parse(existingRaw) : {
+      name: ign,
+      region: 'EU',
+      avatar: `https://mc-heads.net/avatar/${ign}/64`,
+      tiers: {}
+    };
+
+    existing.tiers[gamemode] = {
+      tier,
+      pts: tierPoints[tier] || 0
+    };
+
+    await client.hSet('players', ign, JSON.stringify(existing));
 
     console.log(`${ign} -> ${tier} (${gamemode})`);
 
@@ -28,6 +58,8 @@ export async function POST({ request }) {
       status: 400,
       headers: { 'Content-Type': 'application/json' }
     });
+  } finally {
+    if (client) await client.disconnect();
   }
 }
 

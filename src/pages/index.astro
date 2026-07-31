@@ -1,13 +1,10 @@
 ---
+import { createClient } from 'redis';
+
+export const prerender = false;
+
 // Define all Gamemodes
 const gamemodes = ["UHC", "SMP", "DIA POT", "AXE", "CRYSTAL", "MACE", "SWORD", "NETH POT"];
-
-// Define Tier Points Lookup
-const tierPoints = {
-  HT1: 60, LT1: 45, HT2: 30, LT2: 20,
-  HT3: 10, LT3: 6,  HT4: 4,  LT4: 3,
-  HT5: 2,  LT5: 1
-};
 
 // Helper function to calculate title based on total points
 function getTitle(points) {
@@ -20,31 +17,35 @@ function getTitle(points) {
   return { name: "Rookie", color: "text-slate-400" };
 }
 
-// Player Data Structure
-const playersData = [
-  {
-    name: "shadowdemon4068",
-    region: "EU",
-    avatar: "https://mc-heads.net/avatar/shadowdemon4068/64",
-    tiers: {
-      "MACE": { tier: "HT3", pts: 10 }
-    }
-  }
-];
+// Load players from Redis
+let playersData = [];
+
+try {
+  const client = createClient({ url: import.meta.env.REDIS_URL });
+  await client.connect();
+  const allPlayers = await client.hGetAll('players');
+  await client.disconnect();
+
+  playersData = Object.values(allPlayers).map((raw) => JSON.parse(raw));
+} catch (err) {
+  console.error('Failed to load players from Redis:', err);
+}
 
 // Map over players to compute total points & rank dynamically
-const players = playersData.map((p, index) => {
-  const totalPts = Object.values(p.tiers).reduce((acc, curr) => acc + (curr.pts || 0), 0);
-  const titleInfo = getTitle(totalPts);
-  return {
-    rank: index + 1,
-    ...p,
-    totalPoints: totalPts,
-    title: titleInfo.name,
-    titleColor: titleInfo.color,
-    modesList: Object.keys(p.tiers).map(m => m.replace(/\s+/g, '')).join(',')
-  };
-});
+const players = playersData
+  .map((p) => {
+    const totalPts = Object.values(p.tiers).reduce((acc, curr) => acc + (curr.pts || 0), 0);
+    const titleInfo = getTitle(totalPts);
+    return {
+      ...p,
+      totalPoints: totalPts,
+      title: titleInfo.name,
+      titleColor: titleInfo.color,
+      modesList: Object.keys(p.tiers).map((m) => m.replace(/\s+/g, '')).join(',')
+    };
+  })
+  .sort((a, b) => b.totalPoints - a.totalPoints)
+  .map((p, index) => ({ ...p, rank: index + 1 }));
 ---
 
 <html lang="en">
