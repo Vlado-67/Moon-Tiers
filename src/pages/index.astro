@@ -1,0 +1,267 @@
+---
+// Define all Gamemodes
+const gamemodes = ["UHC", "SMP", "DIA POT", "AXE", "CRYSTAL", "MACE", "SWORD", "NETH POT"];
+
+// Define Tier Points Lookup
+const tierPoints = {
+  HT1: 60, LT1: 45, HT2: 30, LT2: 20,
+  HT3: 10, LT3: 6,  HT4: 4,  LT4: 3,
+  HT5: 2,  LT5: 1
+};
+
+// Helper function to calculate title based on total points
+function getTitle(points) {
+  if (points >= 450) return { name: "Combat Grandmaster", color: "text-amber-300 font-bold" };
+  if (points >= 250) return { name: "Combat Master", color: "text-purple-300 font-bold" };
+  if (points >= 100) return { name: "Combat Ace", color: "text-indigo-300 font-semibold" };
+  if (points >= 50) return { name: "Combat Specialist", color: "text-blue-300 font-semibold" };
+  if (points >= 20) return { name: "Combat Cadet", color: "text-cyan-300 font-medium" };
+  if (points >= 10) return { name: "Combat Novice", color: "text-emerald-300 font-medium" };
+  return { name: "Rookie", color: "text-slate-400" };
+}
+
+// Player Data Structure
+const playersData = [
+  {
+    name: "shadowdemon4068",
+    region: "EU",
+    avatar: "https://mc-heads.net/avatar/shadowdemon4068/64",
+    tiers: {
+      "MACE": { tier: "HT3", pts: 10 }
+    }
+  }
+];
+
+// Map over players to compute total points & rank dynamically
+const players = playersData.map((p, index) => {
+  const totalPts = Object.values(p.tiers).reduce((acc, curr) => acc + (curr.pts || 0), 0);
+  const titleInfo = getTitle(totalPts);
+  return {
+    rank: index + 1,
+    ...p,
+    totalPoints: totalPts,
+    title: titleInfo.name,
+    titleColor: titleInfo.color
+  };
+});
+---
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="viewport" content="width=device-width" />
+		<title>MOON TIERS - Global Rankings</title>
+		<style is:global>
+			@import "tailwindcss";
+		</style>
+	</head>
+	<body class="bg-[#0b0914] text-slate-100 min-h-screen p-4 md:p-8 font-sans selection:bg-purple-500 selection:text-white relative overflow-x-hidden">
+		
+		<!-- Cosmic Background Effect -->
+		<div class="fixed inset-0 pointer-events-none -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-900/30 via-slate-950 to-[#08060f]"></div>
+		<div class="fixed top-[-10%] left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-purple-600/15 blur-[120px] rounded-full pointer-events-none -z-10"></div>
+
+		<!-- Navigation Bar -->
+		<header class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center mb-8 gap-4 border-b border-purple-900/30 pb-4">
+			<div class="flex items-center space-x-3">
+				<div>
+					<h1 class="text-2xl font-black tracking-widest text-white">
+						MOON <span class="text-purple-400">TIERS</span>
+					</h1>
+				</div>
+			</div>
+
+			<!-- Nav links -->
+			<nav class="flex items-center space-x-6 text-sm font-semibold text-slate-400 relative">
+				<button id="show-all-btn" class="text-purple-400 border-b-2 border-purple-400 pb-1 hover:text-white transition-colors">GLOBAL RANKINGS</button>
+				<a href="#" class="hover:text-slate-200 transition-colors">PLAYERS</a>
+				
+				<!-- Gamemode Dropdown Button -->
+				<div class="relative inline-block text-left">
+					<button id="gamemode-menu-btn" class="flex items-center space-x-1 hover:text-purple-300 transition-colors cursor-pointer focus:outline-none">
+						<span>GAMEMODES</span>
+						<svg class="w-4 h-4 ml-0.5 fill-current" viewBox="0 0 20 20">
+							<path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+						</svg>
+					</button>
+
+					<!-- Gamemodes Popup Menu -->
+					<div id="gamemode-dropdown" class="hidden absolute right-0 mt-2 w-48 rounded-xl bg-slate-900/95 border border-purple-500/30 shadow-2xl shadow-purple-950 backdrop-blur-lg z-50 p-2">
+						<div class="text-[10px] font-bold text-slate-400 uppercase px-3 py-1.5 border-b border-slate-800">Select Gamemode</div>
+						<button data-mode="ALL" class="mode-select-btn w-full text-left px-3 py-2 text-xs font-bold text-purple-300 hover:bg-purple-900/40 rounded-lg transition-colors flex justify-between items-center">
+							<span>All Gamemodes</span>
+							<span class="text-[10px] bg-purple-950 px-1.5 py-0.5 rounded border border-purple-700/50">Overall</span>
+						</button>
+						{gamemodes.map((mode) => (
+							<button data-mode={mode} class="mode-select-btn w-full text-left px-3 py-2 text-xs font-medium text-slate-300 hover:bg-purple-900/30 hover:text-white rounded-lg transition-colors">
+								{mode}
+							</button>
+						))}
+					</div>
+				</div>
+
+				<a href="https://discord.gg/6d458aGxNy" target="_blank" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg transition-all shadow-md shadow-indigo-950/80">Discord</a>
+			</nav>
+		</header>
+
+		<!-- Main Container -->
+		<main class="max-w-7xl mx-auto space-y-6">
+			
+			<!-- Table Container -->
+			<div class="bg-slate-900/70 backdrop-blur-xl rounded-2xl border border-purple-500/20 p-6 shadow-2xl shadow-purple-950/50">
+				
+				<div class="text-center mb-6">
+					<h2 id="ranking-title" class="text-xl md:text-2xl font-black tracking-wider text-slate-200 uppercase">
+						GLOBAL RANKINGS
+					</h2>
+					<p id="ranking-subtitle" class="text-xs text-slate-400 mt-1">Overall Leaderboard Across All Modes</p>
+				</div>
+
+				<!-- Gamemodes Multi-Column Table -->
+				<div class="overflow-x-auto">
+					<table class="w-full text-center border-separate border-spacing-y-2">
+						<thead>
+							<tr class="text-slate-400 text-xs font-bold uppercase tracking-wider border-b border-slate-800">
+								<th class="py-3 px-3 text-left">Rank</th>
+								<th class="py-3 px-3 text-left">Player</th>
+								<th class="py-3 px-3">Region</th>
+								<th class="py-3 px-3">Title</th>
+								<th class="py-3 px-3 font-extrabold text-purple-300">Overall Points</th>
+								{gamemodes.map((mode) => (
+									<th class={`py-3 px-2 text-xs font-semibold text-slate-300 min-w-[70px] mode-col mode-col-${mode.replace(/\s+/g, '')}`}>{mode}</th>
+								))}
+							</tr>
+						</thead>
+						<tbody>
+							{players.map((player) => (
+								<tr class="bg-slate-950/70 hover:bg-purple-950/30 transition-all rounded-xl border border-slate-800/60">
+									<td class="py-4 px-3 text-left font-black text-slate-300 rounded-l-xl">
+										#{player.rank}
+									</td>
+									<td class="py-4 px-3 text-left">
+										<div class="flex items-center space-x-3">
+											<img src={player.avatar} alt={player.name} class="w-8 h-8 rounded border border-slate-700 image-rendering-pixelated shadow-sm" />
+											<span class="font-bold text-slate-100 text-sm">{player.name}</span>
+										</div>
+									</td>
+									<td class="py-4 px-3">
+										<span class="px-2 py-0.5 text-xs font-bold bg-slate-800 text-slate-300 rounded border border-slate-700">
+											{player.region}
+										</span>
+									</td>
+									<td class="py-4 px-3">
+										<span class={`text-xs px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800 ${player.titleColor}`}>
+											{player.title}
+										</span>
+									</td>
+									<td class="py-4 px-3 font-mono font-black text-lg text-purple-300">
+										{player.totalPoints}
+									</td>
+									{gamemodes.map((mode) => {
+										const gData = player.tiers[mode];
+										const modeClass = `mode-col mode-col-${mode.replace(/\s+/g, '')}`;
+										return (
+											<td class={`py-4 px-2 ${modeClass}`}>
+												{gData ? (
+													<div class="flex flex-col items-center">
+														<span class="text-xs font-black text-blue-300 bg-blue-950/60 border border-blue-500/40 px-2 py-0.5 rounded">
+															{gData.tier}
+														</span>
+														<span class="text-[10px] font-mono text-slate-400 mt-0.5">
+															{gData.pts}
+														</span>
+													</div>
+												) : (
+													<span class="text-slate-600 font-bold">-</span>
+												)}
+											</td>
+										);
+									})}
+								</tr>
+							))}
+						</tbody>
+					</table>
+				</div>
+
+			</div>
+
+			<!-- Footer Legend -->
+			<div class="bg-slate-900/60 border border-slate-800/80 rounded-xl p-4 text-center text-xs text-slate-400 space-y-2 font-mono">
+				<div class="flex flex-wrap justify-center gap-4">
+					<span><b class="text-amber-400">HT1</b> = 60</span>
+					<span><b class="text-amber-500">LT1</b> = 45</span>
+					<span><b class="text-purple-400">HT2</b> = 30</span>
+					<span><b class="text-purple-500">LT2</b> = 20</span>
+					<span><b class="text-blue-400">HT3</b> = 10</span>
+					<span><b class="text-blue-500">LT3</b> = 6</span>
+					<span><b class="text-cyan-400">HT4</b> = 4</span>
+					<span><b class="text-cyan-500">LT4</b> = 3</span>
+					<span><b class="text-slate-400">HT5</b> = 2</span>
+					<span><b class="text-slate-500">LT5</b> = 1</span>
+				</div>
+				<div class="text-[11px] text-slate-500 pt-1 border-t border-slate-800/60">
+					Rookie &lt;10 | Combat Novice 10+ | Combat Cadet 20+ | Combat Specialist 50+ | Combat Ace 100+ | Combat Master 250+ | Combat Grandmaster 450+
+				</div>
+			</div>
+
+		</main>
+
+		<!-- Script to handle Dropdown Toggle and Gamemode Filtering -->
+		<script>
+			const menuBtn = document.getElementById('gamemode-menu-btn');
+			const dropdown = document.getElementById('gamemode-dropdown');
+			const titleEl = document.getElementById('ranking-title');
+			const subtitleEl = document.getElementById('ranking-subtitle');
+			const showAllBtn = document.getElementById('show-all-btn');
+
+			// Toggle dropdown visibility
+			menuBtn?.addEventListener('click', (e) => {
+				e.stopPropagation();
+				dropdown?.classList.toggle('hidden');
+			});
+
+			// Close dropdown when clicking outside
+			document.addEventListener('click', () => {
+				dropdown?.classList.add('hidden');
+			});
+
+			// Filter gamemode columns
+			const modeBtns = document.querySelectorAll('.mode-select-btn');
+			const allModeCols = document.querySelectorAll('.mode-col');
+
+			function selectGamemode(selectedMode) {
+				dropdown?.classList.add('hidden');
+
+				if (selectedMode === 'ALL') {
+					if (titleEl) titleEl.textContent = 'GLOBAL RANKINGS';
+					if (subtitleEl) subtitleEl.textContent = 'Overall Leaderboard Across All Modes';
+					allModeCols.forEach(col => col.classList.remove('hidden'));
+				} else {
+					if (titleEl) titleEl.textContent = `${selectedMode} RANKINGS`;
+					if (subtitleEl) subtitleEl.textContent = `Displaying scores for ${selectedMode} only`;
+					
+					const targetClass = `mode-col-${selectedMode.replace(/\s+/g, '')}`;
+					allModeCols.forEach(col => {
+						if (col.classList.contains(targetClass)) {
+							col.classList.remove('hidden');
+						} else {
+							col.classList.add('hidden');
+						}
+					});
+				}
+			}
+
+			modeBtns.forEach(btn => {
+				btn.addEventListener('click', () => {
+					const mode = btn.getAttribute('data-mode');
+					if (mode) selectGamemode(mode);
+				});
+			});
+
+			showAllBtn?.addEventListener('click', () => {
+				selectGamemode('ALL');
+			});
+		</script>
+	</body>
+</html>
