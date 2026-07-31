@@ -33,20 +33,21 @@ export async function OPTIONS() {
   return new Response(null, {
     status: 204,
     headers: {
-      'Allow': 'POST, OPTIONS',
+      'Allow': 'POST, GET, HEAD, OPTIONS',
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Methods': 'POST, GET, HEAD, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, x-bot-secret'
     }
   });
 }
 
 export async function GET() {
-  return new Response(JSON.stringify({ error: 'Use POST' }), {
-    status: 405,
-    headers: {
-      'Content-Type': 'application/json',
-      'Allow': 'POST, OPTIONS'
-    }
+  return new Response(JSON.stringify({ status: 'ok', message: 'Tier update endpoint is live' }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' }
   });
+}
+
+export async function HEAD() {
+  return new Response(null, { status: 200 });
 }
