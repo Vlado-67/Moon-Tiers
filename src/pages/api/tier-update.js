@@ -3,6 +3,8 @@ export const prerender = false;
 export async function POST({ request }) {
   try {
     const secret = request.headers.get('x-bot-secret');
+    console.log('Received secret:', JSON.stringify(secret));
+    console.log('Expected secret:', JSON.stringify(import.meta.env.BOT_SECRET));
 
     if (secret !== import.meta.env.BOT_SECRET) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -42,12 +44,4 @@ export async function OPTIONS() {
 }
 
 export async function GET() {
-  return new Response(JSON.stringify({ status: 'ok', message: 'Tier update endpoint is live' }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' }
-  });
-}
-
-export async function HEAD() {
-  return new Response(null, { status: 200 });
-}
+  return new Response(JSON.stringify({ status: 'ok', message: 'Tier update
