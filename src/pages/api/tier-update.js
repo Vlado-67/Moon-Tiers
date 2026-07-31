@@ -44,4 +44,12 @@ export async function OPTIONS() {
 }
 
 export async function GET() {
-  return new Response(JSON.stringify({ status: 'ok', message: 'Tier update
+  return new Response(JSON.stringify({ status: 'ok', message: 'Tier update endpoint is live' }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
+
+export async function HEAD() {
+  return new Response(null, { status: 200 });
+}
