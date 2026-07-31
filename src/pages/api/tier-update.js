@@ -1,12 +1,6 @@
-export async function ALL({ request }) {
-  return handleRequest(request);
-}
+export const prerender = false;
 
 export async function POST({ request }) {
-  return handleRequest(request);
-}
-
-async function handleRequest(request) {
   try {
     const secret = request.headers.get('x-bot-secret');
     
