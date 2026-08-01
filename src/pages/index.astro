@@ -3,8 +3,12 @@ import { createClient } from 'redis';
 
 export const prerender = false;
 
-// Define all Gamemodes
+// Define all Gamemodes with short labels for badges
 const gamemodes = ["UHC", "SMP", "DIA POT", "AXE", "CRYSTAL", "MACE", "SWORD", "NETH POT"];
+const gamemodeAbbr = {
+  UHC: "UHC", SMP: "SMP", "DIA POT": "POT", AXE: "AXE",
+  CRYSTAL: "CRY", MACE: "MACE", SWORD: "SWD", "NETH POT": "NP"
+};
 
 // Helper function to calculate title based on total points
 function getTitle(points) {
@@ -57,13 +61,13 @@ const players = playersData
       totalPoints: totalPts,
       title: titleInfo.name,
       titleColor: titleInfo.color,
-      modesList: Object.keys(p.tiers).join(',')
     };
   })
   .sort((a, b) => b.totalPoints - a.totalPoints)
   .map((p, index) => ({ ...p, rank: index + 1 }));
 
 // Build tier-column groups (1-5) per gamemode, mctiers-style
+// Only tiers with at least one player will be rendered
 const tierListsByMode = {};
 gamemodes.forEach((mode) => {
   const key = mode.replace(/\s+/g, '');
@@ -93,50 +97,21 @@ gamemodes.forEach((mode) => {
 		</style>
 	</head>
 	<body class="bg-[#0b0914] text-slate-100 min-h-screen p-4 md:p-8 font-sans selection:bg-purple-500 selection:text-white relative overflow-x-hidden">
-		
+
 		<!-- Cosmic Background Effect -->
 		<div class="fixed inset-0 pointer-events-none -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-900/30 via-slate-950 to-[#08060f]"></div>
 		<div class="fixed top-[-10%] left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-purple-600/15 blur-[120px] rounded-full pointer-events-none -z-10"></div>
 
 		<!-- Navigation Bar -->
-		<header class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center mb-8 gap-4 border-b border-purple-900/30 pb-4">
+		<header class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center mb-6 gap-4 border-b border-purple-900/30 pb-4">
 			<div class="flex items-center space-x-3">
-				<div>
-					<h1 class="text-2xl font-black tracking-widest text-white">
-						MOON <span class="text-purple-400">TIERS</span>
-					</h1>
-				</div>
+				<h1 class="text-2xl font-black tracking-widest text-white">
+					MOON <span class="text-purple-400">TIERS</span>
+				</h1>
 			</div>
 
-			<!-- Nav links -->
-			<nav class="flex items-center space-x-6 text-sm font-semibold text-slate-400 relative">
-				<button id="show-all-btn" class="text-purple-400 border-b-2 border-purple-400 pb-1 hover:text-white transition-colors">GLOBAL RANKINGS</button>
+			<nav class="flex items-center space-x-6 text-sm font-semibold text-slate-400">
 				<a href="#" class="hover:text-slate-200 transition-colors">PLAYERS</a>
-				
-				<!-- Gamemode Dropdown Button -->
-				<div class="relative inline-block text-left">
-					<button id="gamemode-menu-btn" class="flex items-center space-x-1 hover:text-purple-300 transition-colors cursor-pointer focus:outline-none">
-						<span>GAMEMODES</span>
-						<svg class="w-4 h-4 ml-0.5 fill-current" viewBox="0 0 20 20">
-							<path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-						</svg>
-					</button>
-
-					<!-- Gamemodes Popup Menu -->
-					<div id="gamemode-dropdown" class="hidden absolute right-0 mt-2 w-48 rounded-xl bg-slate-900/95 border border-purple-500/30 shadow-2xl shadow-purple-950 backdrop-blur-lg z-50 p-2">
-						<div class="text-[10px] font-bold text-slate-400 uppercase px-3 py-1.5 border-b border-slate-800">Select Gamemode</div>
-						<button data-mode="ALL" class="mode-select-btn w-full text-left px-3 py-2 text-xs font-bold text-purple-300 hover:bg-purple-900/40 rounded-lg transition-colors flex justify-between items-center">
-							<span>All Gamemodes</span>
-							<span class="text-[10px] bg-purple-950 px-1.5 py-0.5 rounded border border-purple-700/50">Overall</span>
-						</button>
-						{gamemodes.map((mode) => (
-							<button data-mode={mode} class="mode-select-btn w-full text-left px-3 py-2 text-xs font-medium text-slate-300 hover:bg-purple-900/30 hover:text-white rounded-lg transition-colors">
-								{mode}
-							</button>
-						))}
-					</div>
-				</div>
-
 				<a href="https://discord.gg/6d458aGxNy" target="_blank" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg transition-all shadow-md shadow-indigo-950/80">Discord</a>
 			</nav>
 		</header>
@@ -144,78 +119,71 @@ gamemodes.forEach((mode) => {
 		<!-- Main Container -->
 		<main class="max-w-7xl mx-auto space-y-6">
 
-			<div class="text-center mb-2">
+			<!-- Gamemode Tab Bar + Search -->
+			<div class="bg-slate-900/70 backdrop-blur-xl rounded-2xl border border-purple-500/20 p-3 shadow-2xl shadow-purple-950/50 flex flex-col md:flex-row gap-3 items-center">
+				<div class="flex flex-wrap justify-center gap-2 flex-1">
+					<button data-mode="ALL" class="mode-tab-btn active-tab flex flex-col items-center px-4 py-2 rounded-xl border border-purple-500/40 bg-purple-900/30 text-purple-300 font-bold text-xs uppercase transition-all hover:bg-purple-800/40">
+						<span class="w-5 h-5 flex items-center justify-center mb-1">🏆</span>
+						Overall
+					</button>
+					{gamemodes.map((mode) => (
+						<button data-mode={mode} class="mode-tab-btn flex flex-col items-center px-4 py-2 rounded-xl border border-slate-800 bg-slate-950/50 text-slate-400 font-bold text-xs uppercase transition-all hover:bg-purple-900/20 hover:text-purple-300">
+							<span class="w-5 h-5 flex items-center justify-center mb-1 text-[10px] font-black bg-slate-800 rounded-full w-6 h-6">{gamemodeAbbr[mode]}</span>
+							{mode}
+						</button>
+					))}
+				</div>
+				<div class="w-full md:w-64">
+					<input
+						type="text"
+						id="player-search"
+						placeholder="Search players..."
+						class="w-full bg-slate-950/70 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500/50"
+					/>
+				</div>
+			</div>
+
+			<div class="text-center">
 				<h2 id="ranking-title" class="text-xl md:text-2xl font-black tracking-wider text-slate-200 uppercase">
 					GLOBAL RANKINGS
 				</h2>
 				<p id="ranking-subtitle" class="text-xs text-slate-400 mt-1">Overall Leaderboard Across All Modes</p>
 			</div>
 
-			<!-- GLOBAL TABLE VIEW -->
-			<div id="global-table-view" class="bg-slate-900/70 backdrop-blur-xl rounded-2xl border border-purple-500/20 p-6 shadow-2xl shadow-purple-950/50">
-				<div class="overflow-x-auto">
-					<table class="w-full text-center border-separate border-spacing-y-2">
-						<thead>
-							<tr class="text-slate-400 text-xs font-bold uppercase tracking-wider border-b border-slate-800">
-								<th class="py-3 px-3 text-left">Rank</th>
-								<th class="py-3 px-3 text-left">Player</th>
-								<th class="py-3 px-3">Region</th>
-								<th class="py-3 px-3">Title</th>
-								<th class="py-3 px-3 font-extrabold text-purple-300">Overall Points</th>
-								{gamemodes.map((mode) => (
-									<th class="py-3 px-2 text-xs font-semibold text-slate-300 min-w-[70px]">{mode}</th>
-								))}
-							</tr>
-						</thead>
-						<tbody>
-							{players.map((player) => (
-								<tr class="bg-slate-950/70 hover:bg-purple-950/30 transition-all rounded-xl border border-slate-800/60">
-									<td class="py-4 px-3 text-left font-black text-slate-300 rounded-l-xl">
-										#{player.rank}
-									</td>
-									<td class="py-4 px-3 text-left">
-										<div class="flex items-center space-x-3">
-											<img src={player.avatar} alt={player.name} class="w-8 h-8 rounded border border-slate-700 image-rendering-pixelated shadow-sm" />
-											<span class="font-bold text-slate-100 text-sm">{player.name}</span>
-										</div>
-									</td>
-									<td class="py-4 px-3">
-										<span class="px-2 py-0.5 text-xs font-bold bg-slate-800 text-slate-300 rounded border border-slate-700">
-											{player.region}
-										</span>
-									</td>
-									<td class="py-4 px-3">
-										<span class={`text-xs px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800 ${player.titleColor}`}>
-											{player.title}
-										</span>
-									</td>
-									<td class="py-4 px-3 font-mono font-black text-lg text-purple-300">
-										{player.totalPoints}
-									</td>
-									{gamemodes.map((mode) => {
-										const gData = player.tiers[mode.replace(/\s+/g, '')];
-										return (
-											<td class="py-4 px-2">
-												{gData ? (
-													<div class="flex flex-col items-center">
-														<span class="text-xs font-black text-blue-300 bg-blue-950/60 border border-blue-500/40 px-2 py-0.5 rounded">
-															{gData.tier}
-														</span>
-														<span class="text-[10px] font-mono text-slate-400 mt-0.5">
-															{gData.pts}
-														</span>
-													</div>
-												) : (
-													<span class="text-slate-600 font-bold">-</span>
-												)}
-											</td>
-										);
-									})}
-								</tr>
-							))}
-						</tbody>
-					</table>
-				</div>
+			<!-- GLOBAL CARD VIEW -->
+			<div id="global-card-view" class="space-y-3">
+				{players.map((player) => (
+					<div class="player-card bg-slate-900/70 backdrop-blur-xl rounded-2xl border border-purple-500/20 p-4 shadow-xl shadow-purple-950/30 flex flex-col md:flex-row items-center gap-4" data-name={player.name.toLowerCase()}>
+						<div class="flex items-center gap-4 w-full md:w-64 flex-shrink-0">
+							<div class="w-10 h-10 rounded-full border-2 border-purple-500/50 flex items-center justify-center font-black text-purple-300 bg-slate-950">
+								#{player.rank}
+							</div>
+							<img src={player.avatar} alt={player.name} class="w-10 h-10 rounded-lg border border-slate-700" />
+							<div>
+								<div class="font-bold text-slate-100">{player.name}</div>
+								<div class={`text-xs ${player.titleColor}`}>{player.title} · {player.totalPoints} pts</div>
+							</div>
+						</div>
+						<div class="flex-shrink-0">
+							<span class="px-2 py-0.5 text-xs font-bold bg-slate-800 text-slate-300 rounded border border-slate-700">
+								{player.region}
+							</span>
+						</div>
+						<div class="flex flex-wrap gap-2 flex-1 justify-start md:justify-end">
+							{gamemodes.map((mode) => {
+								const key = mode.replace(/\s+/g, '');
+								const gData = player.tiers[key];
+								if (!gData) return null;
+								return (
+									<div class="flex flex-col items-center bg-blue-950/50 border border-blue-500/40 rounded-lg px-2 py-1 min-w-[52px]">
+										<span class="text-[9px] font-bold text-slate-400 uppercase">{gamemodeAbbr[mode]}</span>
+										<span class="text-xs font-black text-blue-300">{gData.tier}</span>
+									</div>
+								);
+							})}
+						</div>
+					</div>
+				))}
 			</div>
 
 			<!-- PER-GAMEMODE TIER-LIST VIEW (mctiers style) -->
@@ -223,30 +191,31 @@ gamemodes.forEach((mode) => {
 				{gamemodes.map((mode) => {
 					const key = mode.replace(/\s+/g, '');
 					const groups = tierListsByMode[key];
+					const activeTiers = [1, 2, 3, 4, 5].filter((n) => groups[n].length > 0);
 					return (
 						<div id={`tierlist-${key}`} class="tierlist-mode hidden bg-slate-900/70 backdrop-blur-xl rounded-2xl border border-purple-500/20 p-6 shadow-2xl shadow-purple-950/50">
-							<div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-								{[1, 2, 3, 4, 5].map((tierNum) => (
-									<div>
-										<div class="text-center font-black text-sm uppercase tracking-wider text-purple-300 border-b border-purple-500/30 pb-2 mb-3">
-											Tier {tierNum}
-										</div>
-										<div class="space-y-2">
-											{groups[tierNum].length > 0 ? (
-												groups[tierNum].map((p) => (
-													<div class="flex items-center space-x-2 bg-slate-950/70 border border-slate-800/60 rounded-lg px-3 py-2">
+							{activeTiers.length > 0 ? (
+								<div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+									{activeTiers.map((tierNum) => (
+										<div>
+											<div class="text-center font-black text-sm uppercase tracking-wider text-purple-300 border-b border-purple-500/30 pb-2 mb-3">
+												Tier {tierNum}
+											</div>
+											<div class="space-y-2">
+												{groups[tierNum].map((p) => (
+													<div class="tierlist-player flex items-center space-x-2 bg-slate-950/70 border border-slate-800/60 rounded-lg px-3 py-2" data-name={p.name.toLowerCase()}>
 														<img src={p.avatar} alt={p.name} class="w-6 h-6 rounded border border-slate-700" />
 														<span class="text-sm font-semibold text-slate-100">{p.name}</span>
 														<span class="ml-auto text-[10px] font-black text-blue-300">{p.tier}</span>
 													</div>
-												))
-											) : (
-												<div class="text-center text-xs text-slate-600 py-4">No players</div>
-											)}
+												))}
+											</div>
 										</div>
-									</div>
-								))}
-							</div>
+									))}
+								</div>
+							) : (
+								<div class="text-center text-sm text-slate-500 py-8">No players have a tier in this gamemode yet.</div>
+							)}
 						</div>
 					);
 				})}
@@ -273,35 +242,33 @@ gamemodes.forEach((mode) => {
 
 		</main>
 
-		<!-- Script to handle Dropdown Toggle and Gamemode Filtering -->
+		<!-- Script to handle Tab Switching, Filtering, and Search -->
 		<script>
-			const menuBtn = document.getElementById('gamemode-menu-btn');
-			const dropdown = document.getElementById('gamemode-dropdown');
 			const titleEl = document.getElementById('ranking-title');
 			const subtitleEl = document.getElementById('ranking-subtitle');
-			const showAllBtn = document.getElementById('show-all-btn');
-			const globalTableView = document.getElementById('global-table-view');
+			const globalCardView = document.getElementById('global-card-view');
 			const tierlistView = document.getElementById('tierlist-view');
+			const searchInput = document.getElementById('player-search');
 
-			menuBtn?.addEventListener('click', (e) => {
-				e.stopPropagation();
-				dropdown?.classList.toggle('hidden');
-			});
-
-			document.addEventListener('click', () => {
-				dropdown?.classList.add('hidden');
-			});
-
-			const modeBtns = document.querySelectorAll('.mode-select-btn');
+			const modeTabBtns = document.querySelectorAll('.mode-tab-btn');
 			const allTierlistModes = document.querySelectorAll('.tierlist-mode');
 
-			function selectGamemode(selectedMode) {
-				dropdown?.classList.add('hidden');
+			function setActiveTab(btn) {
+				modeTabBtns.forEach(b => {
+					b.classList.remove('active-tab', 'border-purple-500/40', 'bg-purple-900/30', 'text-purple-300');
+					b.classList.add('border-slate-800', 'bg-slate-950/50', 'text-slate-400');
+				});
+				btn.classList.add('active-tab', 'border-purple-500/40', 'bg-purple-900/30', 'text-purple-300');
+				btn.classList.remove('border-slate-800', 'bg-slate-950/50', 'text-slate-400');
+			}
+
+			function selectGamemode(selectedMode, btn) {
+				if (btn) setActiveTab(btn);
 
 				if (selectedMode === 'ALL') {
 					if (titleEl) titleEl.textContent = 'GLOBAL RANKINGS';
 					if (subtitleEl) subtitleEl.textContent = 'Overall Leaderboard Across All Modes';
-					globalTableView?.classList.remove('hidden');
+					globalCardView?.classList.remove('hidden');
 					tierlistView?.classList.add('hidden');
 					allTierlistModes.forEach(el => el.classList.add('hidden'));
 				} else {
@@ -310,7 +277,7 @@ gamemodes.forEach((mode) => {
 
 					const targetKey = selectedMode.replace(/\s+/g, '');
 
-					globalTableView?.classList.add('hidden');
+					globalCardView?.classList.add('hidden');
 					tierlistView?.classList.remove('hidden');
 					allTierlistModes.forEach(el => {
 						if (el.id === `tierlist-${targetKey}`) {
@@ -320,18 +287,31 @@ gamemodes.forEach((mode) => {
 						}
 					});
 				}
+				applySearch();
 			}
 
-			modeBtns.forEach(btn => {
+			modeTabBtns.forEach(btn => {
 				btn.addEventListener('click', () => {
 					const mode = btn.getAttribute('data-mode');
-					if (mode) selectGamemode(mode);
+					if (mode) selectGamemode(mode, btn);
 				});
 			});
 
-			showAllBtn?.addEventListener('click', () => {
-				selectGamemode('ALL');
-			});
+			function applySearch() {
+				const query = (searchInput?.value || '').trim().toLowerCase();
+
+				document.querySelectorAll('.player-card').forEach(card => {
+					const name = card.getAttribute('data-name') || '';
+					card.style.display = name.includes(query) ? '' : 'none';
+				});
+
+				document.querySelectorAll('.tierlist-player').forEach(row => {
+					const name = row.getAttribute('data-name') || '';
+					row.style.display = name.includes(query) ? '' : 'none';
+				});
+			}
+
+			searchInput?.addEventListener('input', applySearch);
 		</script>
 	</body>
 </html>
