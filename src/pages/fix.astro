@@ -12,9 +12,9 @@ try {
   const raw = await client.hGet('players', 'ZaxyR_');
   if (raw) {
     const player = JSON.parse(raw);
-    delete player.tiers['UHC'];
+    delete player.tiers['SMP'];
     await client.hSet('players', 'ZaxyR_', JSON.stringify(player));
-    result = 'Removed UHC tier from ZaxyR_. Updated data: ' + JSON.stringify(player);
+    result = 'Removed SMP tier from ZaxyR_. Updated data: ' + JSON.stringify(player);
   } else {
     result = 'ZaxyR_ not found in database.';
   }
