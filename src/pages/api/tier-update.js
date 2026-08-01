@@ -23,6 +23,8 @@ export async function POST({ request }) {
     const body = await request.json();
     const { ign, tier, gamemode, userId, guildId } = body;
 
+    const normalizedGamemode = gamemode.trim().toUpperCase();
+
     const tierPoints = {
       HT1: 60, LT1: 45, HT2: 30, LT2: 20,
       HT3: 10, LT3: 6,  HT4: 4,  LT4: 3,
@@ -39,14 +41,14 @@ export async function POST({ request }) {
       tiers: {}
     };
 
-    existing.tiers[gamemode] = {
+    existing.tiers[normalizedGamemode] = {
       tier,
       pts: tierPoints[tier] || 0
     };
 
     await client.hSet('players', ign, JSON.stringify(existing));
 
-    console.log(`${ign} -> ${tier} (${gamemode})`);
+    console.log(`${ign} -> ${tier} (${normalizedGamemode})`);
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,

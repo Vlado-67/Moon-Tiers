@@ -4,7 +4,7 @@ import { createClient } from 'redis';
 export const prerender = false;
 
 // Define all Gamemodes
-const gamemodes = ["UHC", "SMP", "DIA POT", "AXE", "CRYSTAL", "MACE", "SWORD", "NETH POT"];
+const gamemodes = ["UHC", "SMP", "DIA POT", "AXE", "CRYSTAL", "MACE", "SWORD", "NETH OP"];
 
 // Helper function to calculate title based on total points
 function getTitle(points) {
@@ -30,6 +30,15 @@ try {
 } catch (err) {
   console.error('Failed to load players from Redis:', err);
 }
+
+// Normalize tier keys to uppercase (handles old lowercase entries too)
+playersData = playersData.map((p) => {
+  const normalizedTiers = {};
+  for (const [key, value] of Object.entries(p.tiers || {})) {
+    normalizedTiers[key.trim().toUpperCase()] = value;
+  }
+  return { ...p, tiers: normalizedTiers };
+});
 
 // Map over players to compute total points & rank dynamically
 const players = playersData
@@ -217,18 +226,15 @@ const players = playersData
 			const subtitleEl = document.getElementById('ranking-subtitle');
 			const showAllBtn = document.getElementById('show-all-btn');
 
-			// Toggle dropdown visibility
 			menuBtn?.addEventListener('click', (e) => {
 				e.stopPropagation();
 				dropdown?.classList.toggle('hidden');
 			});
 
-			// Close dropdown when clicking outside
 			document.addEventListener('click', () => {
 				dropdown?.classList.add('hidden');
 			});
 
-			// Filter gamemode columns
 			const modeBtns = document.querySelectorAll('.mode-select-btn');
 			const allModeCols = document.querySelectorAll('.mode-col');
 			const allPlayerRows = document.querySelectorAll('.player-row');
