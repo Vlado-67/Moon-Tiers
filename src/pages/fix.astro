@@ -1,0 +1,32 @@
+---
+import { createClient } from 'redis';
+
+export const prerender = false;
+
+let result = 'Not run yet.';
+
+try {
+  const client = createClient({ url: import.meta.env.REDIS_URL });
+  await client.connect();
+
+  const raw = await client.hGet('players', 'ZaxyR_');
+  if (raw) {
+    const player = JSON.parse(raw);
+    delete player.tiers['UHC'];
+    await client.hSet('players', 'ZaxyR_', JSON.stringify(player));
+    result = 'Removed UHC tier from ZaxyR_. Updated data: ' + JSON.stringify(player);
+  } else {
+    result = 'ZaxyR_ not found in database.';
+  }
+
+  await client.disconnect();
+} catch (err) {
+  result = 'Error: ' + err.message;
+}
+---
+
+<html>
+  <body style="background:#111; color:#0f0; font-family: monospace; padding: 20px; white-space: pre-wrap;">
+    {result}
+  </body>
+</html>
