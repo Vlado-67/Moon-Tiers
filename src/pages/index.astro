@@ -10,6 +10,26 @@ const gamemodeAbbr = {
   CRYSTAL: "CRY", MACE: "MACE", SWORD: "SWD", "NETH POT": "NP"
 };
 
+// Titles list with icons and point thresholds
+const titlesList = [
+  { name: "Combat Grandmaster", icon: "👑", threshold: 450, color: "text-amber-300" },
+  { name: "Combat Master", icon: "⭐", threshold: 250, color: "text-purple-300" },
+  { name: "Combat Ace", icon: "✦", threshold: 100, color: "text-indigo-300" },
+  { name: "Combat Specialist", icon: "◆", threshold: 50, color: "text-blue-300" },
+  { name: "Combat Cadet", icon: "▲", threshold: 20, color: "text-cyan-300" },
+  { name: "Combat Novice", icon: "●", threshold: 10, color: "text-emerald-300" },
+  { name: "Rookie", icon: "○", threshold: 0, color: "text-slate-400" },
+];
+
+// Points per rank for the info modal
+const rankPoints = [
+  { tier: "HT1", pts: 60 }, { tier: "LT1", pts: 45 },
+  { tier: "HT2", pts: 30 }, { tier: "LT2", pts: 20 },
+  { tier: "HT3", pts: 10 }, { tier: "LT3", pts: 6 },
+  { tier: "HT4", pts: 4 },  { tier: "LT4", pts: 3 },
+  { tier: "HT5", pts: 2 },  { tier: "LT5", pts: 1 },
+];
+
 // Helper function to calculate title based on total points
 function getTitle(points) {
   if (points >= 450) return { name: "Combat Grandmaster", color: "text-amber-300 font-bold" };
@@ -112,6 +132,9 @@ gamemodes.forEach((mode) => {
 
 			<nav class="flex items-center space-x-6 text-sm font-semibold text-slate-400">
 				<a href="#" class="hover:text-slate-200 transition-colors">PLAYERS</a>
+				<button id="info-btn" class="flex items-center justify-center w-8 h-8 rounded-full border border-purple-500/40 bg-purple-900/30 text-purple-300 hover:bg-purple-800/40 transition-colors font-bold">
+					i
+				</button>
 				<a href="https://discord.gg/6d458aGxNy" target="_blank" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg transition-all shadow-md shadow-indigo-950/80">Discord</a>
 			</nav>
 		</header>
@@ -128,7 +151,7 @@ gamemodes.forEach((mode) => {
 					</button>
 					{gamemodes.map((mode) => (
 						<button data-mode={mode} class="mode-tab-btn flex flex-col items-center px-4 py-2 rounded-xl border border-slate-800 bg-slate-950/50 text-slate-400 font-bold text-xs uppercase transition-all hover:bg-purple-900/20 hover:text-purple-300">
-							<span class="w-5 h-5 flex items-center justify-center mb-1 text-[10px] font-black bg-slate-800 rounded-full w-6 h-6">{gamemodeAbbr[mode]}</span>
+							<span class="flex items-center justify-center mb-1 text-[10px] font-black bg-slate-800 rounded-full w-6 h-6">{gamemodeAbbr[mode]}</span>
 							{mode}
 						</button>
 					))}
@@ -242,7 +265,52 @@ gamemodes.forEach((mode) => {
 
 		</main>
 
-		<!-- Script to handle Tab Switching, Filtering, and Search -->
+		<!-- Info Modal -->
+		<div id="info-modal-overlay" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+			<div class="bg-slate-950 border border-purple-500/30 rounded-2xl max-w-lg w-full max-h-[85vh] overflow-y-auto shadow-2xl shadow-purple-950">
+				<div class="sticky top-0 bg-slate-950 border-b border-slate-800 p-5 flex items-center justify-between">
+					<div class="flex items-center gap-3">
+						<div class="w-9 h-9 rounded-lg bg-purple-900/40 border border-purple-500/40 flex items-center justify-center text-purple-300 font-black">i</div>
+						<h3 class="text-lg font-black text-white uppercase tracking-wide">Ranking System</h3>
+					</div>
+					<button id="info-close-btn" class="text-slate-400 hover:text-white text-xl font-bold px-2">&times;</button>
+				</div>
+				<div class="p-5 space-y-6">
+					<p class="text-xs text-slate-400 leading-relaxed">
+						Each rank you earn in any gamemode gives you points. Your total points across all gamemodes determine your overall position.
+					</p>
+
+					<div>
+						<div class="text-purple-400 text-xs font-black uppercase tracking-wider border-l-2 border-purple-500 pl-2 mb-3">Points Per Rank</div>
+						<div class="grid grid-cols-2 gap-2">
+							{rankPoints.map((r) => (
+								<div class="flex items-center justify-between bg-slate-900/70 border border-slate-800 rounded-lg px-3 py-2">
+									<span class="text-xs font-black text-blue-300 bg-blue-950/60 border border-blue-500/40 px-2 py-0.5 rounded">{r.tier}</span>
+									<span class="text-sm font-bold text-purple-300">{r.pts} PTS</span>
+								</div>
+							))}
+						</div>
+					</div>
+
+					<div>
+						<div class="text-purple-400 text-xs font-black uppercase tracking-wider border-l-2 border-purple-500 pl-2 mb-3">Titles List</div>
+						<div class="space-y-2">
+							{titlesList.map((t) => (
+								<div class="flex items-center justify-between bg-slate-900/70 border border-slate-800 rounded-lg px-3 py-2.5">
+									<div class="flex items-center gap-2">
+										<span class="text-base">{t.icon}</span>
+										<span class={`text-sm font-bold ${t.color}`}>{t.name}</span>
+									</div>
+									<span class="text-xs text-slate-400">{t.threshold > 0 ? `${t.threshold}+ PTS` : '<10 PTS'}</span>
+								</div>
+							))}
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Script to handle Tab Switching, Filtering, Search, and Info Modal -->
 		<script>
 			const titleEl = document.getElementById('ranking-title');
 			const subtitleEl = document.getElementById('ranking-subtitle');
@@ -312,6 +380,23 @@ gamemodes.forEach((mode) => {
 			}
 
 			searchInput?.addEventListener('input', applySearch);
+
+			// Info Modal
+			const infoBtn = document.getElementById('info-btn');
+			const infoCloseBtn = document.getElementById('info-close-btn');
+			const infoModalOverlay = document.getElementById('info-modal-overlay');
+
+			infoBtn?.addEventListener('click', () => {
+				infoModalOverlay?.classList.remove('hidden');
+			});
+			infoCloseBtn?.addEventListener('click', () => {
+				infoModalOverlay?.classList.add('hidden');
+			});
+			infoModalOverlay?.addEventListener('click', (e) => {
+				if (e.target === infoModalOverlay) {
+					infoModalOverlay.classList.add('hidden');
+				}
+			});
 		</script>
 	</body>
 </html>
