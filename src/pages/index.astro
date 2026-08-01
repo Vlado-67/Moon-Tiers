@@ -17,6 +17,12 @@ function getTitle(points) {
   return { name: "Rookie", color: "text-slate-400" };
 }
 
+// Extract the numeric tier level (1-5) from a tier string like "HT1" or "LT3"
+function tierNumber(tierStr) {
+  const match = tierStr.match(/(\d)/);
+  return match ? match[1] : '5';
+}
+
 // Load players from Redis
 let playersData = [];
 
@@ -56,6 +62,24 @@ const players = playersData
   })
   .sort((a, b) => b.totalPoints - a.totalPoints)
   .map((p, index) => ({ ...p, rank: index + 1 }));
+
+// Build tier-column groups (1-5) per gamemode, mctiers-style
+const tierListsByMode = {};
+gamemodes.forEach((mode) => {
+  const key = mode.replace(/\s+/g, '');
+  const groups = { 1: [], 2: [], 3: [], 4: [], 5: [] };
+  players.forEach((p) => {
+    const gData = p.tiers[key];
+    if (gData) {
+      const num = tierNumber(gData.tier);
+      groups[num].push({ name: p.name, avatar: p.avatar, tier: gData.tier });
+    }
+  });
+  Object.keys(groups).forEach((k) => {
+    groups[k].sort((a, b) => a.tier.localeCompare(b.tier));
+  });
+  tierListsByMode[key] = groups;
+});
 ---
 
 <html lang="en">
@@ -119,18 +143,16 @@ const players = playersData
 
 		<!-- Main Container -->
 		<main class="max-w-7xl mx-auto space-y-6">
-			
-			<!-- Table Container -->
-			<div class="bg-slate-900/70 backdrop-blur-xl rounded-2xl border border-purple-500/20 p-6 shadow-2xl shadow-purple-950/50">
-				
-				<div class="text-center mb-6">
-					<h2 id="ranking-title" class="text-xl md:text-2xl font-black tracking-wider text-slate-200 uppercase">
-						GLOBAL RANKINGS
-					</h2>
-					<p id="ranking-subtitle" class="text-xs text-slate-400 mt-1">Overall Leaderboard Across All Modes</p>
-				</div>
 
-				<!-- Gamemodes Multi-Column Table -->
+			<div class="text-center mb-2">
+				<h2 id="ranking-title" class="text-xl md:text-2xl font-black tracking-wider text-slate-200 uppercase">
+					GLOBAL RANKINGS
+				</h2>
+				<p id="ranking-subtitle" class="text-xs text-slate-400 mt-1">Overall Leaderboard Across All Modes</p>
+			</div>
+
+			<!-- GLOBAL TABLE VIEW -->
+			<div id="global-table-view" class="bg-slate-900/70 backdrop-blur-xl rounded-2xl border border-purple-500/20 p-6 shadow-2xl shadow-purple-950/50">
 				<div class="overflow-x-auto">
 					<table class="w-full text-center border-separate border-spacing-y-2">
 						<thead>
@@ -141,13 +163,13 @@ const players = playersData
 								<th class="py-3 px-3">Title</th>
 								<th class="py-3 px-3 font-extrabold text-purple-300">Overall Points</th>
 								{gamemodes.map((mode) => (
-									<th class={`py-3 px-2 text-xs font-semibold text-slate-300 min-w-[70px] mode-col mode-col-${mode.replace(/\s+/g, '')}`}>{mode}</th>
+									<th class="py-3 px-2 text-xs font-semibold text-slate-300 min-w-[70px]">{mode}</th>
 								))}
 							</tr>
 						</thead>
 						<tbody>
 							{players.map((player) => (
-								<tr class="player-row bg-slate-950/70 hover:bg-purple-950/30 transition-all rounded-xl border border-slate-800/60" data-modes={player.modesList}>
+								<tr class="bg-slate-950/70 hover:bg-purple-950/30 transition-all rounded-xl border border-slate-800/60">
 									<td class="py-4 px-3 text-left font-black text-slate-300 rounded-l-xl">
 										#{player.rank}
 									</td>
@@ -172,9 +194,8 @@ const players = playersData
 									</td>
 									{gamemodes.map((mode) => {
 										const gData = player.tiers[mode.replace(/\s+/g, '')];
-										const modeClass = `mode-col mode-col-${mode.replace(/\s+/g, '')}`;
 										return (
-											<td class={`py-4 px-2 ${modeClass}`}>
+											<td class="py-4 px-2">
 												{gData ? (
 													<div class="flex flex-col items-center">
 														<span class="text-xs font-black text-blue-300 bg-blue-950/60 border border-blue-500/40 px-2 py-0.5 rounded">
@@ -195,7 +216,40 @@ const players = playersData
 						</tbody>
 					</table>
 				</div>
+			</div>
 
+			<!-- PER-GAMEMODE TIER-LIST VIEW (mctiers style) -->
+			<div id="tierlist-view" class="hidden space-y-6">
+				{gamemodes.map((mode) => {
+					const key = mode.replace(/\s+/g, '');
+					const groups = tierListsByMode[key];
+					return (
+						<div id={`tierlist-${key}`} class="tierlist-mode hidden bg-slate-900/70 backdrop-blur-xl rounded-2xl border border-purple-500/20 p-6 shadow-2xl shadow-purple-950/50">
+							<div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+								{[1, 2, 3, 4, 5].map((tierNum) => (
+									<div>
+										<div class="text-center font-black text-sm uppercase tracking-wider text-purple-300 border-b border-purple-500/30 pb-2 mb-3">
+											Tier {tierNum}
+										</div>
+										<div class="space-y-2">
+											{groups[tierNum].length > 0 ? (
+												groups[tierNum].map((p) => (
+													<div class="flex items-center space-x-2 bg-slate-950/70 border border-slate-800/60 rounded-lg px-3 py-2">
+														<img src={p.avatar} alt={p.name} class="w-6 h-6 rounded border border-slate-700" />
+														<span class="text-sm font-semibold text-slate-100">{p.name}</span>
+														<span class="ml-auto text-[10px] font-black text-blue-300">{p.tier}</span>
+													</div>
+												))
+											) : (
+												<div class="text-center text-xs text-slate-600 py-4">No players</div>
+											)}
+										</div>
+									</div>
+								))}
+							</div>
+						</div>
+					);
+				})}
 			</div>
 
 			<!-- Footer Legend -->
@@ -226,6 +280,8 @@ const players = playersData
 			const titleEl = document.getElementById('ranking-title');
 			const subtitleEl = document.getElementById('ranking-subtitle');
 			const showAllBtn = document.getElementById('show-all-btn');
+			const globalTableView = document.getElementById('global-table-view');
+			const tierlistView = document.getElementById('tierlist-view');
 
 			menuBtn?.addEventListener('click', (e) => {
 				e.stopPropagation();
@@ -237,8 +293,7 @@ const players = playersData
 			});
 
 			const modeBtns = document.querySelectorAll('.mode-select-btn');
-			const allModeCols = document.querySelectorAll('.mode-col');
-			const allPlayerRows = document.querySelectorAll('.player-row');
+			const allTierlistModes = document.querySelectorAll('.tierlist-mode');
 
 			function selectGamemode(selectedMode) {
 				dropdown?.classList.add('hidden');
@@ -246,29 +301,22 @@ const players = playersData
 				if (selectedMode === 'ALL') {
 					if (titleEl) titleEl.textContent = 'GLOBAL RANKINGS';
 					if (subtitleEl) subtitleEl.textContent = 'Overall Leaderboard Across All Modes';
-					allModeCols.forEach(col => col.classList.remove('hidden'));
-					allPlayerRows.forEach(row => row.classList.remove('hidden'));
+					globalTableView?.classList.remove('hidden');
+					tierlistView?.classList.add('hidden');
+					allTierlistModes.forEach(el => el.classList.add('hidden'));
 				} else {
 					if (titleEl) titleEl.textContent = `${selectedMode} RANKINGS`;
 					if (subtitleEl) subtitleEl.textContent = `Displaying scores for ${selectedMode} only`;
-					
+
 					const targetKey = selectedMode.replace(/\s+/g, '');
-					const targetClass = `mode-col-${targetKey}`;
 
-					allModeCols.forEach(col => {
-						if (col.classList.contains(targetClass)) {
-							col.classList.remove('hidden');
+					globalTableView?.classList.add('hidden');
+					tierlistView?.classList.remove('hidden');
+					allTierlistModes.forEach(el => {
+						if (el.id === `tierlist-${targetKey}`) {
+							el.classList.remove('hidden');
 						} else {
-							col.classList.add('hidden');
-						}
-					});
-
-					allPlayerRows.forEach(row => {
-						const modes = (row.getAttribute('data-modes') || '').split(',');
-						if (modes.includes(targetKey)) {
-							row.classList.remove('hidden');
-						} else {
-							row.classList.add('hidden');
+							el.classList.add('hidden');
 						}
 					});
 				}
