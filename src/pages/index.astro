@@ -3,11 +3,11 @@ import { createClient } from 'redis';
 
 export const prerender = false;
 
-// Define all Gamemodes with short labels for badges
+// Define all Gamemodes with icons
 const gamemodes = ["UHC", "SMP", "DIA POT", "AXE", "CRYSTAL", "MACE", "SWORD", "NETH POT"];
-const gamemodeAbbr = {
-  UHC: "UHC", SMP: "SMP", "DIA POT": "POT", AXE: "AXE",
-  CRYSTAL: "CRY", MACE: "MACE", SWORD: "SWD", "NETH POT": "NP"
+const gamemodeIcon = {
+  UHC: "❤️", SMP: "🌍", "DIA POT": "🧪", AXE: "🪓",
+  CRYSTAL: "💎", MACE: "🔨", SWORD: "⚔️", "NETH POT": "🔥"
 };
 
 // Titles list with icons and point thresholds
@@ -146,12 +146,12 @@ gamemodes.forEach((mode) => {
 			<div class="bg-slate-900/70 backdrop-blur-xl rounded-2xl border border-purple-500/20 p-3 shadow-2xl shadow-purple-950/50 flex flex-col md:flex-row gap-3 items-center">
 				<div class="flex flex-wrap justify-center gap-2 flex-1">
 					<button data-mode="ALL" class="mode-tab-btn active-tab flex flex-col items-center px-4 py-2 rounded-xl border border-purple-500/40 bg-purple-900/30 text-purple-300 font-bold text-xs uppercase transition-all hover:bg-purple-800/40">
-						<span class="w-5 h-5 flex items-center justify-center mb-1">🏆</span>
+						<span class="text-lg mb-1">🏆</span>
 						Overall
 					</button>
 					{gamemodes.map((mode) => (
 						<button data-mode={mode} class="mode-tab-btn flex flex-col items-center px-4 py-2 rounded-xl border border-slate-800 bg-slate-950/50 text-slate-400 font-bold text-xs uppercase transition-all hover:bg-purple-900/20 hover:text-purple-300">
-							<span class="flex items-center justify-center mb-1 text-[10px] font-black bg-slate-800 rounded-full w-6 h-6">{gamemodeAbbr[mode]}</span>
+							<span class="text-lg mb-1">{gamemodeIcon[mode]}</span>
 							{mode}
 						</button>
 					))}
@@ -198,8 +198,8 @@ gamemodes.forEach((mode) => {
 								const gData = player.tiers[key];
 								if (!gData) return null;
 								return (
-									<div class="flex flex-col items-center bg-blue-950/50 border border-blue-500/40 rounded-lg px-2 py-1 min-w-[52px]">
-										<span class="text-[9px] font-bold text-slate-400 uppercase">{gamemodeAbbr[mode]}</span>
+									<div class="flex flex-col items-center bg-blue-950/50 border border-blue-500/40 rounded-lg px-2 py-1 min-w-[44px]" title={mode}>
+										<span class="text-sm leading-none mb-0.5">{gamemodeIcon[mode]}</span>
 										<span class="text-xs font-black text-blue-300">{gData.tier}</span>
 									</div>
 								);
