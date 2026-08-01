@@ -4,7 +4,7 @@ import { createClient } from 'redis';
 export const prerender = false;
 
 // Define all Gamemodes
-const gamemodes = ["UHC", "SMP", "DIA POT", "AXE", "CRYSTAL", "MACE", "SWORD", "NETH OP"];
+const gamemodes = ["UHC", "SMP", "DIA POT", "AXE", "CRYSTAL", "MACE", "SWORD", "NETH POT"];
 
 // Helper function to calculate title based on total points
 function getTitle(points) {
@@ -31,11 +31,12 @@ try {
   console.error('Failed to load players from Redis:', err);
 }
 
-// Normalize tier keys to uppercase (handles old lowercase entries too)
+// Normalize tier keys: strip spaces, uppercase (handles old inconsistent entries)
 playersData = playersData.map((p) => {
   const normalizedTiers = {};
   for (const [key, value] of Object.entries(p.tiers || {})) {
-    normalizedTiers[key.trim().toUpperCase()] = value;
+    const normalizedKey = key.trim().toUpperCase().replace(/\s+/g, '');
+    normalizedTiers[normalizedKey] = value;
   }
   return { ...p, tiers: normalizedTiers };
 });
@@ -50,7 +51,7 @@ const players = playersData
       totalPoints: totalPts,
       title: titleInfo.name,
       titleColor: titleInfo.color,
-      modesList: Object.keys(p.tiers).map((m) => m.replace(/\s+/g, '')).join(',')
+      modesList: Object.keys(p.tiers).join(',')
     };
   })
   .sort((a, b) => b.totalPoints - a.totalPoints)
@@ -170,7 +171,7 @@ const players = playersData
 										{player.totalPoints}
 									</td>
 									{gamemodes.map((mode) => {
-										const gData = player.tiers[mode];
+										const gData = player.tiers[mode.replace(/\s+/g, '')];
 										const modeClass = `mode-col mode-col-${mode.replace(/\s+/g, '')}`;
 										return (
 											<td class={`py-4 px-2 ${modeClass}`}>
