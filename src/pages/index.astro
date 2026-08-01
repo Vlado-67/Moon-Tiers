@@ -3,12 +3,22 @@ import { createClient } from 'redis';
 
 export const prerender = false;
 
-// Define all Gamemodes with icons
+// Define all Gamemodes
 const gamemodes = ["UHC", "SMP", "DIA POT", "AXE", "CRYSTAL", "MACE", "SWORD", "NETH POT"];
-const gamemodeIcon = {
-  UHC: "❤️", SMP: "🌍", "DIA POT": "🧪", AXE: "🪓",
-  CRYSTAL: "💎", MACE: "🔨", SWORD: "⚔️", "NETH POT": "🔥"
+
+// SVG icon paths (simple line-icon style) per gamemode
+const gamemodeSvg = {
+  UHC: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.5-9.5-9C.5 8 2 4 6 4c2 0 3.5 1.5 4 3 .5-1.5 2-3 4-3 4 0 5.5 4 3.5 8-2.5 4.5-9.5 9-9.5 9z"/></svg>`,
+  SMP: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/></svg>`,
+  "DIA POT": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h16l-3 4-5 9-5-9-3-4z"/><path d="M8 8l4 13 4-13M4 8l4 4M20 8l-4 4"/></svg>`,
+  AXE: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3c4 0 7 3 7 7 0 2-1 3-2 4l7 7-2 2-7-7c-1 1-2 2-4 2-4 0-7-3-7-7 0-1 0-2 1-3"/><path d="M13 10l8-7"/></svg>`,
+  CRYSTAL: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l6 6-6 14L6 8l6-6z"/><path d="M6 8h12M9 8l3 14M15 8l-3 14"/></svg>`,
+  MACE: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="2" width="6" height="8" rx="1"/><path d="M12 10v12"/><path d="M9 22h6"/></svg>`,
+  SWORD: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 3.5L21 10l-9.5 9.5L5 13 14.5 3.5z"/><path d="M5 13l-2 2 3 3 2-2M15 5l4 4"/></svg>`,
+  "NETH POT": `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2c2 3-1 4-1 6a3 3 0 106 0c0-1-1-2-1-3 3 2 5 5 5 9a9 9 0 11-18 0c0-5 4-8 9-12z"/></svg>`,
 };
+
+const trophySvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0V4z"/><path d="M7 5H4a3 3 0 003 5M17 5h3a3 3 0 01-3 5"/></svg>`;
 
 // Titles list with icons and point thresholds
 const titlesList = [
@@ -87,7 +97,7 @@ const players = playersData
   .map((p, index) => ({ ...p, rank: index + 1 }));
 
 // Build tier-column groups (1-5) per gamemode, mctiers-style
-// Only tiers with at least one player will be rendered
+// All 5 tiers always shown in fixed order, empty ones show a placeholder
 const tierListsByMode = {};
 gamemodes.forEach((mode) => {
   const key = mode.replace(/\s+/g, '');
@@ -114,6 +124,8 @@ gamemodes.forEach((mode) => {
 		<title>MOON TIERS - Global Rankings</title>
 		<style is:global>
 			@import "tailwindcss";
+			.icon-sm svg { width: 18px; height: 18px; }
+			.icon-xs svg { width: 14px; height: 14px; }
 		</style>
 	</head>
 	<body class="bg-[#0b0914] text-slate-100 min-h-screen p-4 md:p-8 font-sans selection:bg-purple-500 selection:text-white relative overflow-x-hidden">
@@ -146,12 +158,12 @@ gamemodes.forEach((mode) => {
 			<div class="bg-slate-900/70 backdrop-blur-xl rounded-2xl border border-purple-500/20 p-3 shadow-2xl shadow-purple-950/50 flex flex-col md:flex-row gap-3 items-center">
 				<div class="flex flex-wrap justify-center gap-2 flex-1">
 					<button data-mode="ALL" class="mode-tab-btn active-tab flex flex-col items-center px-4 py-2 rounded-xl border border-purple-500/40 bg-purple-900/30 text-purple-300 font-bold text-xs uppercase transition-all hover:bg-purple-800/40">
-						<span class="text-lg mb-1">🏆</span>
+						<span class="icon-sm mb-1" set:html={trophySvg} />
 						Overall
 					</button>
 					{gamemodes.map((mode) => (
 						<button data-mode={mode} class="mode-tab-btn flex flex-col items-center px-4 py-2 rounded-xl border border-slate-800 bg-slate-950/50 text-slate-400 font-bold text-xs uppercase transition-all hover:bg-purple-900/20 hover:text-purple-300">
-							<span class="text-lg mb-1">{gamemodeIcon[mode]}</span>
+							<span class="icon-sm mb-1" set:html={gamemodeSvg[mode]} />
 							{mode}
 						</button>
 					))}
@@ -199,7 +211,7 @@ gamemodes.forEach((mode) => {
 								if (!gData) return null;
 								return (
 									<div class="flex flex-col items-center bg-blue-950/50 border border-blue-500/40 rounded-lg px-2 py-1 min-w-[44px]" title={mode}>
-										<span class="text-sm leading-none mb-0.5">{gamemodeIcon[mode]}</span>
+										<span class="icon-xs text-blue-300 mb-0.5" set:html={gamemodeSvg[mode]} />
 										<span class="text-xs font-black text-blue-300">{gData.tier}</span>
 									</div>
 								);
@@ -209,36 +221,35 @@ gamemodes.forEach((mode) => {
 				))}
 			</div>
 
-			<!-- PER-GAMEMODE TIER-LIST VIEW (mctiers style) -->
+			<!-- PER-GAMEMODE TIER-LIST VIEW (mctiers style, fixed 5 columns always) -->
 			<div id="tierlist-view" class="hidden space-y-6">
 				{gamemodes.map((mode) => {
 					const key = mode.replace(/\s+/g, '');
 					const groups = tierListsByMode[key];
-					const activeTiers = [1, 2, 3, 4, 5].filter((n) => groups[n].length > 0);
 					return (
 						<div id={`tierlist-${key}`} class="tierlist-mode hidden bg-slate-900/70 backdrop-blur-xl rounded-2xl border border-purple-500/20 p-6 shadow-2xl shadow-purple-950/50">
-							{activeTiers.length > 0 ? (
-								<div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-									{activeTiers.map((tierNum) => (
-										<div>
-											<div class="text-center font-black text-sm uppercase tracking-wider text-purple-300 border-b border-purple-500/30 pb-2 mb-3">
-												Tier {tierNum}
-											</div>
-											<div class="space-y-2">
-												{groups[tierNum].map((p) => (
+							<div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+								{[1, 2, 3, 4, 5].map((tierNum) => (
+									<div>
+										<div class="text-center font-black text-sm uppercase tracking-wider text-purple-300 border-b border-purple-500/30 pb-2 mb-3">
+											Tier {tierNum}
+										</div>
+										<div class="space-y-2">
+											{groups[tierNum].length > 0 ? (
+												groups[tierNum].map((p) => (
 													<div class="tierlist-player flex items-center space-x-2 bg-slate-950/70 border border-slate-800/60 rounded-lg px-3 py-2" data-name={p.name.toLowerCase()}>
 														<img src={p.avatar} alt={p.name} class="w-6 h-6 rounded border border-slate-700" />
 														<span class="text-sm font-semibold text-slate-100">{p.name}</span>
 														<span class="ml-auto text-[10px] font-black text-blue-300">{p.tier}</span>
 													</div>
-												))}
-											</div>
+												))
+											) : (
+												<div class="text-center text-xs text-slate-600 py-4">No players</div>
+											)}
 										</div>
-									))}
-								</div>
-							) : (
-								<div class="text-center text-sm text-slate-500 py-8">No players have a tier in this gamemode yet.</div>
-							)}
+									</div>
+								))}
+							</div>
 						</div>
 					);
 				})}
